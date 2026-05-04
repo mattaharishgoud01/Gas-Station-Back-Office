@@ -1,0 +1,64 @@
+import express from 'express';
+import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
+import authRoutes from './routes/auth';
+import inventoryRoutes from './routes/inventory';
+import salesRoutes from './routes/sales';
+import fuelRoutes from './routes/fuel';
+import dailyClosingRoutes from './routes/dailyClosing';
+import reportRoutes from './routes/reports';
+import posRoutes from './routes/pos';
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+const PORT = process.env.PORT || 5001;
+
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'],
+  credentials: true
+}));
+app.use(express.json());
+
+// Global Request Logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// Inject io into req.app so routes can emit events
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log(`Client connected: ${socket.id}`);
+  
+  socket.on('join_store', (storeId) => {
+    socket.join(`store-${storeId}`);
+    console.log(`Client ${socket.id} joined store: ${storeId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/sales', salesRoutes);
+app.use('/api/fuel-log', fuelRoutes);
+app.use('/api/daily-close', dailyClosingRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/pos', posRoutes);
+
+server.listen(PORT, () => {
+  console.log(`Server & WebSockets running on port ${PORT}`);
+});

@@ -1,0 +1,379 @@
+import { createContext, useContext, useState, useMemo } from 'react';
+
+const DataContext = createContext();
+
+export const useData = () => useContext(DataContext);
+
+export const DataProvider = ({ children }) => {
+  // --- CORE DATABASE STATE ---
+  
+  const [fuelTanks, setFuelTanks] = useState([
+    { id: 1, type: 'Regular 87', capacity: 10000, current: 4500, cost: 2.85, price: 3.19, deliveryHistory: [], totalSold: 0 },
+    { id: 2, type: 'Premium 93', capacity: 8000, current: 3200, cost: 3.25, price: 3.79, deliveryHistory: [], totalSold: 0 },
+    { id: 3, type: 'Diesel', capacity: 12000, current: 8000, cost: 3.15, price: 3.59, deliveryHistory: [], totalSold: 0 },
+    { id: 4, type: 'Dyed Diesel', capacity: 5000, current: 1500, cost: 2.80, price: 3.20, deliveryHistory: [], totalSold: 0 },
+  ]);
+
+  const [inventory, setInventory] = useState([
+    { id: 1, name: 'Marlboro Red', category: 'Cigarettes', sku: '283749283', cost: 6.50, price: 9.50, stock: 45, lowStockAlert: 50 },
+    { id: 2, name: 'Bud Light 12pk', category: 'Beer', sku: '982736482', cost: 11.00, price: 15.99, stock: 120, lowStockAlert: 30 },
+    { id: 3, name: 'Red Bull 8oz', category: 'Beverages', sku: '192837465', cost: 1.50, price: 2.99, stock: 200, lowStockAlert: 50 },
+    { id: 4, name: 'Hot Dog', category: 'Hot Food', sku: 'HOTDOG01', cost: 0.80, price: 2.50, stock: 15, lowStockAlert: 20 },
+    { id: 5, name: 'Elf Bar Vape', category: 'Vapes', sku: 'VAPE092', cost: 12.00, price: 24.99, stock: 8, lowStockAlert: 15 },
+  ]);
+
+  const [salesLog, setSalesLog] = useState([]);
+
+  const [employees, setEmployees] = useState([
+    { id: 1, name: 'Admin User', role: 'Owner', shift: 'All', salesHandled: 0 },
+    { id: 2, name: 'Alice Smith', role: 'Manager', shift: 'Morning (6AM-2PM)', salesHandled: 4500 },
+    { id: 3, name: 'Bob Jones', role: 'Staff', shift: 'Evening (2PM-10PM)', salesHandled: 2100 },
+  ]);
+
+  const [vendors, setVendors] = useState([
+    { id: 1, name: 'Core-Mark', category: 'Groceries/Tobacco', lastOrder: '2026-04-25', status: 'Delivered', rating: '98%' },
+    { id: 2, name: 'PepsiCo', category: 'Beverages', lastOrder: '2026-04-26', status: 'Pending', rating: '95%' },
+    { id: 3, name: 'Anheuser-Busch', category: 'Beer', lastOrder: '2026-04-20', status: 'Delivered', rating: '99%' },
+  ]);
+
+  // Static Trends for Charts
+  const [hourlyTrends] = useState([
+    { time: '6AM', sales: 400 }, { time: '8AM', sales: 1200 }, { time: '10AM', sales: 800 },
+    { time: '12PM', sales: 1500 }, { time: '2PM', sales: 900 }, { time: '4PM', sales: 1800 },
+    { time: '6PM', sales: 2100 }, { time: '8PM', sales: 1100 }, { time: '10PM', sales: 600 }
+  ]);
+
+  const [auditLogs, setAuditLogs] = useState([
+    {
+      id: 1,
+      user: 'System',
+      action: 'Initialized Database',
+      module: 'System',
+      oldValue: 'None',
+      newValue: 'Ready',
+      timestamp: new Date().toISOString()
+    }
+  ]);
+
+  const addAuditLog = (user, action, module, oldValue, newValue) => {
+    setAuditLogs(prev => [{
+      id: Date.now() + Math.random(),
+      user,
+      action,
+      module,
+      oldValue: String(oldValue),
+      newValue: String(newValue),
+      timestamp: new Date().toISOString()
+    }, ...prev]);
+  };
+
+  // --- BUSINESS LOGIC ACTIONS ---
+
+  // 1. Connects Sales to Inventory Deduction (REAL BUSINESS LOGIC)
+  const recordStoreSale = (itemsSold) => {
+    // itemsSold: [{ id: 1, qty: 2 }]
+    let saleRevenue = 0;
+    let saleProfit = 0;
+
+    setInventory(prev => prev.map(item => {
+      const sold = itemsSold.find(s => s.id === item.id);
+      if (sold) {
+        if (item.stock - sold.qty < 0) {
+          console.warn(`Negative inventory prevented for ${item.name}`);
+          return item; // Prevent negative
+        }
+        
+        saleRevenue += item.price * sold.qty;
+        saleProfit += (item.price - item.cost) * sold.qty;
+
+        const newStock = item.stock - sold.qty;
+        addAuditLog('Admin User', `Sold ${sold.qty}x ${item.name}`, 'Inventory', `${item.stock}`, `${newStock}`);
+
+        return { ...item, stock: newStock };
+      }
+      return item;
+    }));
+
+    setSalesLog(prev => [{
+      id: Date.now(),
+      type: 'store',
+      date: new Date().toISOString().split('T')[0],
+      revenue: saleRevenue,
+      profit: saleProfit,
+      items: itemsSold
+    }, ...prev]);
+  };
+
+  // 4. Fuel Tank Tracking Logic
+  const recordFuelSale = (tankId, gallonsSold) => {
+    let saleRevenue = 0;
+    let saleProfit = 0;
+
+    setFuelTanks(prev => prev.map(tank => {
+      if (tank.id === tankId) {
+        saleRevenue = tank.price * gallonsSold;
+        saleProfit = (tank.price - tank.cost) * gallonsSold;
+        
+        const newLevel = tank.current - gallonsSold;
+        addAuditLog('Admin User', `Sold ${gallonsSold} gal of ${tank.type}`, 'Fuel', `${tank.current.toFixed(1)} gal`, `${newLevel.toFixed(1)} gal`);
+
+        return { 
+          ...tank, 
+          current: newLevel,
+          totalSold: tank.totalSold + gallonsSold
+        };
+      }
+      return tank;
+    }));
+
+    setSalesLog(prev => [{
+      id: Date.now(),
+      type: 'fuel',
+      date: new Date().toISOString().split('T')[0],
+      revenue: saleRevenue,
+      profit: saleProfit,
+      gallons: gallonsSold
+    }, ...prev]);
+  };
+
+  const addFuelDelivery = (tankId, gallonsAdded) => {
+    setFuelTanks(prev => prev.map(tank => {
+      if (tank.id === tankId) {
+        const newLevel = Math.min(tank.capacity, tank.current + gallonsAdded);
+        addAuditLog('Admin User', `Received Fuel Delivery`, 'Fuel', `${tank.current.toFixed(1)} gal`, `${newLevel.toFixed(1)} gal`);
+        
+        return { 
+          ...tank, 
+          current: newLevel,
+          deliveryHistory: [...tank.deliveryHistory, { date: new Date().toISOString(), qty: gallonsAdded }]
+        };
+      }
+      return tank;
+    }));
+  };
+
+  const [shrinkageLogs, setShrinkageLogs] = useState([
+    { id: 1, type: 'fuel', name: 'Premium 93', expected: 3250, actual: 3200, lossQty: 50, lossValue: 162.50, date: new Date().toISOString() }
+  ]);
+
+  const recordPhysicalCount = (type, itemId, actualCount) => {
+    if (type === 'inventory') {
+      setInventory(prev => prev.map(item => {
+        if (item.id === itemId) {
+          if (actualCount < item.stock) {
+            const lossQty = item.stock - actualCount;
+            const lossValue = lossQty * item.cost;
+            setShrinkageLogs(logs => [{
+              id: Date.now(),
+              type: 'inventory',
+              name: item.name,
+              expected: item.stock,
+              actual: actualCount,
+              lossQty,
+              lossValue,
+              date: new Date().toISOString()
+            }, ...logs]);
+            addAuditLog('Admin User', `Reported shrinkage on ${item.name}`, 'Loss Prevention', item.stock, actualCount);
+          }
+          return { ...item, stock: actualCount };
+        }
+        return item;
+      }));
+    } else if (type === 'fuel') {
+      setFuelTanks(prev => prev.map(tank => {
+        if (tank.id === itemId) {
+          if (actualCount < tank.current) {
+            const lossQty = tank.current - actualCount;
+            const lossValue = lossQty * tank.cost;
+            setShrinkageLogs(logs => [{
+              id: Date.now(),
+              type: 'fuel',
+              name: tank.type,
+              expected: tank.current.toFixed(1),
+              actual: parseFloat(actualCount).toFixed(1),
+              lossQty: lossQty.toFixed(1),
+              lossValue,
+              date: new Date().toISOString()
+            }, ...logs]);
+            addAuditLog('Admin User', `Reported fuel loss on ${tank.type}`, 'Loss Prevention', `${tank.current.toFixed(1)} gal`, `${parseFloat(actualCount).toFixed(1)} gal`);
+          }
+          return { ...tank, current: parseFloat(actualCount) };
+        }
+        return tank;
+      }));
+    }
+  };
+
+  // --- DERIVED LIVE METRICS ---
+
+  // 2. Real Profit Calculation
+  const calculateKPIs = () => {
+    let baseRevenue = 14500;
+    let baseProfit = 3200;
+    let baseGallons = 3450;
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Add real-time log data
+    salesLog.filter(s => s.date === today).forEach(sale => {
+      baseRevenue += sale.revenue;
+      baseProfit += sale.profit;
+      if (sale.type === 'fuel') baseGallons += sale.gallons;
+    });
+
+    return {
+      revenue: baseRevenue,
+      profit: baseProfit,
+      gallons: baseGallons,
+      lowStockCount: inventory.filter(item => item.stock <= item.lowStockAlert).length
+    };
+  };
+
+  // Dynamic Department Sales for Charts
+  const deptSales = useMemo(() => {
+    let fuelSales = 8500;
+    let storeCategories = { 'Cigarettes': 2100, 'Beer': 1800, 'Beverages': 1200, 'Hot Food': 900, 'Vapes': 500 };
+
+    // Aggregate from real-time log
+    salesLog.forEach(sale => {
+      if (sale.type === 'fuel') {
+        fuelSales += sale.revenue;
+      } else {
+        sale.items.forEach(soldItem => {
+          const itemDef = inventory.find(i => i.id === soldItem.id);
+          if (itemDef) {
+            storeCategories[itemDef.category] = (storeCategories[itemDef.category] || 0) + (itemDef.price * soldItem.qty);
+          }
+        });
+      }
+    });
+
+    return [
+      { name: 'Fuel', value: fuelSales },
+      ...Object.entries(storeCategories).map(([name, value]) => ({ name, value }))
+    ].sort((a, b) => b.value - a.value);
+  }, [salesLog, inventory]);
+
+  const [dailyHistory, setDailyHistory] = useState([
+    {
+      id: 1,
+      date: '2026-04-26',
+      totalRevenue: 15420.50,
+      totalExpenses: 800.00,
+      netProfit: 3200.25,
+      highestCategory: 'Fuel (Regular)',
+      lowestCategory: 'Hot Food',
+      fuelRevenue: 11000,
+      storeRevenue: 4420.50
+    },
+    {
+      id: 2,
+      date: '2026-04-25',
+      totalRevenue: 14890.00,
+      totalExpenses: 750.00,
+      netProfit: 2980.00,
+      highestCategory: 'Fuel (Regular)',
+      lowestCategory: 'Vapes',
+      fuelRevenue: 10500,
+      storeRevenue: 4390.00
+    }
+  ]);
+
+  // 6. Smart Alerts System
+  const getSmartInsights = () => {
+    const insights = [];
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // 1. Detect low margins
+    const lowestMarginItem = [...inventory].sort((a,b) => ((a.price - a.cost)/a.price) - ((b.price - b.cost)/b.price))[0];
+    if (lowestMarginItem) {
+      const marginPct = ((lowestMarginItem.price - lowestMarginItem.cost) / lowestMarginItem.price) * 100;
+      if (marginPct < 15) {
+         insights.push({ id: 'margin-1', type: 'danger', text: `${lowestMarginItem.category} margin is low (${marginPct.toFixed(1)}%). Consider a price adjustment on ${lowestMarginItem.name}.` });
+      }
+    }
+
+    // 2. High Margin Items
+    const highestMarginItem = [...inventory].sort((a,b) => ((b.price - b.cost)/b.price) - ((a.price - a.cost)/a.price))[0];
+    if (highestMarginItem) {
+      const marginPct = ((highestMarginItem.price - highestMarginItem.cost) / highestMarginItem.price) * 100;
+      if (marginPct > 40) {
+         insights.push({ id: 'margin-2', type: 'success', text: `${highestMarginItem.name} is a high-margin product (${marginPct.toFixed(1)}%). Promote it at the register.` });
+      }
+    }
+
+    // 3. Top selling item today
+    const todaysSales = salesLog.filter(s => s.date === todayStr && s.type === 'store');
+    const itemCounts = {};
+    todaysSales.forEach(sale => {
+      sale.items.forEach(i => {
+        itemCounts[i.id] = (itemCounts[i.id] || 0) + i.qty;
+      });
+    });
+    
+    const topItemId = Object.keys(itemCounts).sort((a,b) => itemCounts[b] - itemCounts[a])[0];
+    if (topItemId) {
+      const topItem = inventory.find(i => i.id === parseInt(topItemId));
+      if (topItem) {
+        insights.push({ id: 'top-1', type: 'success', text: `Top selling item today is ${topItem.name} with ${itemCounts[topItemId]} units sold.` });
+      }
+    }
+
+    // 4. Compare vs yesterday
+    if (dailyHistory.length > 0) {
+      const yesterday = dailyHistory[0]; // Assuming index 0 is the most recent closed day
+      const todayMetrics = calculateKPIs();
+      
+      if (todayMetrics.revenue > yesterday.totalRevenue) {
+        const increase = ((todayMetrics.revenue - yesterday.totalRevenue) / yesterday.totalRevenue) * 100;
+        insights.push({ id: 'vs-1', type: 'success', text: `Total Revenue is tracking ${increase.toFixed(1)}% higher than yesterday.` });
+      } else if (todayMetrics.revenue < yesterday.totalRevenue * 0.8) {
+        insights.push({ id: 'vs-2', type: 'warning', text: `Revenue is currently lower compared to yesterday's final close.` });
+      }
+    }
+
+    // 5. Detect low-performing products
+    const storeItemsSold = Object.keys(itemCounts);
+    const lowPerforming = inventory.filter(i => !storeItemsSold.includes(i.id.toString()) && i.stock > 0);
+    if (lowPerforming.length > 0) {
+      const worstItem = lowPerforming[0];
+      insights.push({ id: 'low-perf-1', type: 'warning', text: `${worstItem.name} has not sold anything today despite having stock.` });
+    }
+
+    // 6. Check inventory levels
+    const lowItems = inventory.filter(i => i.stock <= i.lowStockAlert);
+    if (lowItems.length > 0) {
+      insights.push({ id: 'inv-1', type: 'danger', text: `${lowItems.length} products have fallen below minimum stock thresholds.` });
+    }
+
+    // 7. Weekly Trends
+    if (dailyHistory.length >= 2) {
+       insights.push({ id: 'week-1', type: 'success', text: `Weekly trend is stable. Store revenue remains consistent across the last ${dailyHistory.length} recorded shifts.` });
+    }
+
+    return insights.slice(0, 5); // Show top 5
+  };
+
+  const value = {
+    fuelTanks, setFuelTanks,
+    inventory, setInventory,
+    salesLog, setSalesLog,
+    hourlyTrends, deptSales,
+    employees, setEmployees,
+    vendors, setVendors,
+    auditLogs, addAuditLog,
+    dailyHistory, setDailyHistory,
+    shrinkageLogs, recordPhysicalCount,
+    calculateKPIs,
+    getSmartInsights,
+    recordStoreSale,
+    recordFuelSale,
+    addFuelDelivery
+  };
+
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+    </DataContext.Provider>
+  );
+};

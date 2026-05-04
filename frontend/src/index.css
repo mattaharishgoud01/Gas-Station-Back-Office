@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-slate-900 overflow-hidden selection:bg-primary/20;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar for modern SaaS feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-300;
+}
+
+/* Premium UI Utilities */
+@layer utilities {
+  .glass-panel {
+    @apply bg-white shadow-card rounded-2xl border border-slate-200/60 transition-all duration-300;
+  }
+  .glass-panel:hover {
+    @apply shadow-card-hover border-slate-200;
+  }
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-primary hover:from-primary hover:to-blue-400 text-white font-semibold px-5 py-2.5 rounded-lg transition-all shadow-floating active:scale-95 flex items-center justify-center gap-2 border border-transparent;
+  }
+  .btn-secondary {
+    @apply bg-white hover:bg-slate-50 text-slate-700 font-semibold px-5 py-2.5 rounded-lg transition-all border border-slate-200 shadow-sm active:scale-95 flex items-center justify-center gap-2;
+  }
+  .table-header {
+    @apply bg-slate-50/50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider;
+  }
+  .table-row {
+    @apply border-b border-slate-100 hover:bg-slate-50 transition-colors last:border-0;
+  }
+  .badge {
+    @apply px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1 w-fit;
+  }
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-600 border-emerald-200;
+  }
+  .badge-warning {
+    @apply bg-amber-50 text-amber-600 border-amber-200;
+  }
+  .badge-danger {
+    @apply bg-rose-50 text-rose-600 border-rose-200;
+  }
+}
