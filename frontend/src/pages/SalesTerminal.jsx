@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Save, CheckCircle2, Droplets } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { getDepartmentConfig } from '../utils/departments';
-import { salesService, fuelService } from '../services/api';
+import { salesService } from '../services/api';
 
 export default function DailyClose() {
   const { inventory, fuelTanks, recordStoreSale, recordFuelSale, activeStoreId } = useData();

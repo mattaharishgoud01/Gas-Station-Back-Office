@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Plus, Shield, Clock, DollarSign, Eye, Edit2, MoreHorizontal } from 'lucide-react';
+import { Plus, Eye, Edit2, MoreHorizontal } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 export default function Employees() {

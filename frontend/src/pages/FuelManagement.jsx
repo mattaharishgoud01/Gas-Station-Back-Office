@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Fuel, TrendingUp, Download, AlertTriangle, Truck } from 'lucide-react';
+import { Fuel, TrendingUp, AlertTriangle, Truck } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useState } from 'react';
 import { fuelService } from '../services/api';

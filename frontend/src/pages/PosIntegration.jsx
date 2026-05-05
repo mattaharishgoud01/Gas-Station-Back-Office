@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Settings, RefreshCw, Key, CheckCircle2, AlertCircle, UploadCloud, FileText } from 'lucide-react';
 import Papa from 'papaparse';
 import { useData } from '../context/DataContext';
 import { posService } from '../services/api';
 
 export default function PosIntegration() {
-  const { activeStoreId } = useData();
+  const { activeStoreId, inventory } = useData();
   const [activeTab, setActiveTab] = useState('api');
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -24,6 +24,7 @@ export default function PosIntegration() {
 
   useEffect(() => {
     if (activeStoreId === 'hq') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus({ connected: false });
   }, [activeStoreId]);
 
@@ -151,7 +152,7 @@ export default function PosIntegration() {
         setLastImport({ file: `sftp_report_${new Date().toISOString().split('T')[0]}.csv`, processed: 2, errors: 0 });
         setLoading(false);
       }, 2000);
-    } catch (err) {
+    } catch (error) {
       setMessage('Failed to run auto-scan.');
       setLoading(false);
     }

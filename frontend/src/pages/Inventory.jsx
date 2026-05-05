@@ -91,7 +91,7 @@ export default function Inventory() {
     }
 
     try {
-      const response = await inventoryService.createItem(payload);
+      await inventoryService.createItem(payload);
       
       // STEP 4 & 5: Success Response & UI Update
       setFormMessage({ type: 'success', text: 'Product added successfully' });

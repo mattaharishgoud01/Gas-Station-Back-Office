@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardCheck, DollarSign, TrendingUp, History, Save, Calendar, ArrowRight, TrendingDown } from 'lucide-react';
+import { ClipboardCheck, TrendingUp, History, Save, Calendar, TrendingDown } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataContext';
 import { dailyCloseService } from '../services/api';

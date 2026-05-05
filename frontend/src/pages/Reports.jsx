@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, TrendingDown, TrendingUp, AlertTriangle, Lightbulb, Calendar } from 'lucide-react';
+import { FileText, TrendingDown, TrendingUp, Lightbulb, Calendar } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 export default function Reports() {
