@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Settings, RefreshCw, Key, CheckCircle2, AlertCircle, UploadCloud, FileText } from 'lucide-react';
 import Papa from 'papaparse';
 import { useData } from '../context/DataContext';
-import { posService } from '../services/api';
+import { posService, inventoryService } from '../services/api';
 
 export default function PosIntegration() {
   const { activeStoreId, inventory } = useData();
@@ -113,7 +113,7 @@ export default function PosIntegration() {
     try {
       if (csvType === 'catalog') {
         // Use inventoryService instead of posService for catalog imports
-        const { inventoryService } = await import('../services/api');
+        // inventoryService is statically imported at the top
         await inventoryService.importCsv({ storeId: activeStoreId, items: csvData });
         setMessage(`Successfully imported ${csvData.length} catalog items into inventory.`);
         setLastImport({ file: csvFile?.name || 'catalog.csv', processed: csvData.length, errors: 0 });
