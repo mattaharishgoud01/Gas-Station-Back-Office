@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Fuel, Package, ShoppingCart, BarChart3, Users, Truck, Bell, Search, Settings, ClipboardCheck, ShieldAlert, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Fuel, Package, ShoppingCart, BarChart3, Users, Truck, Bell, Search, Settings, ClipboardCheck, ShieldAlert, CreditCard, Menu, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import AIAssistant from '../components/AIAssistant';
 
@@ -19,22 +20,42 @@ const navItems = [
 
 export default function DashboardLayout() {
   const { currentUser, stores, activeStoreId, setActiveStoreId } = useData();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // If Manager or Staff, they shouldn't see 'Global HQ' option
   const canSeeHQ = currentUser.role === 'owner';
 
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
   return (
-    <div className="flex h-screen bg-background text-slate-900 font-sans">
+    <div className="flex h-screen bg-background text-slate-900 font-sans overflow-hidden">
       
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={closeMobileMenu}
+        />
+      )}
+
       {/* Dark Sidebar */}
-      <aside className="w-64 bg-sidebar border-r border-slate-800 flex flex-col shadow-2xl z-20">
-        <div className="p-6 flex items-center gap-3 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Fuel className="w-5 h-5 text-white" />
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out transform
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0
+      `}>
+        <div className="p-6 flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Fuel className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white">FuelOps Pro</h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">FuelOps Pro</h1>
-          </div>
+          <button className="md:hidden text-slate-400 hover:text-white" onClick={closeMobileMenu}>
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
         {/* Store Switcher */}
@@ -62,6 +83,7 @@ export default function DashboardLayout() {
               <NavLink
                 key={item.name}
                 to={item.path}
+                onClick={closeMobileMenu}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
                     isActive 
@@ -84,7 +106,7 @@ export default function DashboardLayout() {
         {/* Bottom Sidebar Settings */}
         <div className="p-3 border-t border-slate-800/60 mt-auto">
           {canSeeHQ && (
-            <NavLink to="/billing" className={({isActive}) => `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+            <NavLink to="/billing" onClick={closeMobileMenu} className={({isActive}) => `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
               <CreditCard className="w-4 h-4" />
               Billing & Plans
             </NavLink>
@@ -97,29 +119,37 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">
         
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-          <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text"
-              placeholder="Search reports, inventory, or employees..."
-              className="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
-            />
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button 
+              className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 focus:outline-none"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="relative w-48 md:w-96 hidden sm:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text"
+                placeholder="Search..."
+                className="w-full bg-slate-50 border border-slate-200 text-sm rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <button className="relative text-slate-400 hover:text-slate-600 transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
             </button>
-            <div className="flex items-center gap-3 border-l border-slate-200 pl-6 cursor-pointer group">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm ring-2 ring-white group-hover:ring-blue-100 transition-all">
+            <div className="flex items-center gap-3 border-l border-slate-200 pl-4 md:pl-6 cursor-pointer group">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm ring-2 ring-white group-hover:ring-blue-100 transition-all flex-shrink-0">
                 {currentUser.name.split(' ').map(n => n[0]).join('')}
               </div>
-              <div className="text-sm">
+              <div className="text-sm hidden sm:block">
                 <p className="font-semibold text-slate-900 leading-tight">{currentUser.name}</p>
                 <p className="text-xs text-slate-500 font-medium capitalize">{currentUser.role}</p>
               </div>
@@ -128,7 +158,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* Content Viewport */}
-        <main className="flex-1 overflow-y-auto p-8 relative">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
