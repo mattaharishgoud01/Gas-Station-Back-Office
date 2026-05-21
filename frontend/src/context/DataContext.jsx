@@ -213,6 +213,43 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  useEffect(() => {
+    import('../services/api').then(({ socket }) => {
+      if (activeStoreId && activeStoreId !== 'hq') {
+        socket.emit('join_store', activeStoreId);
+
+        const handleSalesUpdate = (payload) => {
+          console.log('LIVE SALE RECEIVED:', payload);
+          // Refetch or append to sales logs (in a real app, we'd append to state or refetch KPI endpoints)
+          // For now we add a visual notification or append to state
+          if (payload.data && payload.data.totalAmount) {
+            setSalesLog(prev => [{ 
+              id: payload.data.id || Date.now(),
+              type: payload.data.category === 'fuel' ? 'fuel' : 'store',
+              date: new Date().toISOString().split('T')[0],
+              revenue: payload.data.totalAmount,
+              profit: payload.data.totalAmount * 0.3, // Mock profit for real-time insert
+              gallons: payload.data.category === 'fuel' ? (payload.data.totalAmount / 3.0) : 0,
+              items: payload.data.saleItems || []
+            }, ...prev]);
+          }
+        };
+
+        const handleFuelUpdate = (payload) => {
+          console.log('LIVE FUEL DROP RECEIVED:', payload);
+        };
+
+        socket.on('sales_updated', handleSalesUpdate);
+        socket.on('fuel_updated', handleFuelUpdate);
+
+        return () => {
+          socket.off('sales_updated', handleSalesUpdate);
+          socket.off('fuel_updated', handleFuelUpdate);
+        };
+      }
+    });
+  }, [activeStoreId]);
+
   const calculateKPIs = () => {
     let baseRevenue = 0; let baseProfit = 0; let baseGallons = 0;
     const today = new Date().toISOString().split('T')[0];

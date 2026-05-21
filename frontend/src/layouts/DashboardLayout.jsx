@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Fuel, Package, ShoppingCart, BarChart3, Users, Truck, Bell, Search, Settings, ClipboardCheck, ShieldAlert, CreditCard, Menu, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import AIAssistant from '../components/AIAssistant';
 
 const navItems = [
@@ -19,11 +20,12 @@ const navItems = [
 ];
 
 export default function DashboardLayout() {
-  const { currentUser, stores, activeStoreId, setActiveStoreId } = useData();
+  const { stores, activeStoreId, setActiveStoreId } = useData();
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // If Manager or Staff, they shouldn't see 'Global HQ' option
-  const canSeeHQ = currentUser.role === 'owner';
+  const canSeeHQ = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'OWNER';
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -147,11 +149,14 @@ export default function DashboardLayout() {
             </button>
             <div className="flex items-center gap-3 border-l border-slate-200 pl-4 md:pl-6 cursor-pointer group">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm ring-2 ring-white group-hover:ring-blue-100 transition-all flex-shrink-0">
-                {currentUser.name.split(' ').map(n => n[0]).join('')}
+                {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'U'}
               </div>
               <div className="text-sm hidden sm:block">
-                <p className="font-semibold text-slate-900 leading-tight">{currentUser.name}</p>
-                <p className="text-xs text-slate-500 font-medium capitalize">{currentUser.role}</p>
+                <p className="font-semibold text-slate-900 leading-tight">{user?.name || 'User'}</p>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-xs text-slate-500 font-medium capitalize">{user?.role || 'Staff'}</p>
+                  <button onClick={logout} className="text-[10px] text-red-500 hover:text-red-600 font-bold uppercase tracking-wider">Logout</button>
+                </div>
               </div>
             </div>
           </div>

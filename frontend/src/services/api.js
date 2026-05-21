@@ -80,6 +80,7 @@ export const posService = {
   getStatus: (storeId) => api.get(`/pos/status?storeId=${storeId}`),
   sync: (data) => api.post('/pos/sync', data),
   importCsv: (data) => api.post('/pos/import-csv', data),
+  autoScan: (data) => api.post('/pos/auto-scan', data),
   saveMapping: (data) => api.post('/pos/mappings', data),
   getMappings: (storeId) => api.get(`/pos/mappings?storeId=${storeId}`)
 };

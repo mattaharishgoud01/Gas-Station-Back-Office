@@ -147,31 +147,42 @@ export default function PosIntegration() {
     setMessage('');
     setUnmatchedItems([]);
     try {
-      setTimeout(() => {
-        setMessage('Successfully auto-scanned SFTP folder. 1 new file processed.');
-        setLastImport({ file: `sftp_report_${new Date().toISOString().split('T')[0]}.csv`, processed: 2, errors: 0 });
-        setLoading(false);
-      }, 2000);
+      const res = await posService.autoScan({ storeId: activeStoreId });
+      setMessage(res.data.message);
+      setLastImport({ 
+        file: res.data.filename, 
+        processed: res.data.matchedCount, 
+        errors: res.data.unmatchedCount 
+      });
     } catch (error) {
-      setMessage('Failed to run auto-scan.');
+      const errorMsg = error.response?.data?.error || error.message;
+      console.error(error);
+      setMessage(`Failed to run auto-scan: ${errorMsg}`);
+    } finally {
       setLoading(false);
     }
   };
 
-  const saveMapping = (posName) => {
+  const saveMapping = async (posName) => {
     const invId = mappings[posName];
     if (!invId) return;
     
-    // Simulate API call to posService.saveMapping()
-    setUnmatchedItems(prev => prev.filter(name => name !== posName));
-    setMessage(`Successfully mapped "${posName}" to inventory. It will automatically sync next time.`);
-    
-    if (lastImport) {
-      setLastImport({
-        ...lastImport,
-        processed: lastImport.processed + 1,
-        errors: lastImport.errors - 1
-      });
+    try {
+      await posService.saveMapping({ storeId: activeStoreId, posItemName: posName, inventoryId: invId });
+      setUnmatchedItems(prev => prev.filter(name => name !== posName));
+      setMessage(`Successfully mapped "${posName}" to inventory. It will automatically sync next time.`);
+      
+      if (lastImport) {
+        setLastImport({
+          ...lastImport,
+          processed: lastImport.processed + 1,
+          errors: lastImport.errors - 1
+        });
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message;
+      console.error(error);
+      setMessage(`Failed to save mapping: ${errorMsg}`);
     }
   };
 
