@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Plus, Eye, Edit2, MoreHorizontal } from 'lucide-react';
+import { Plus, Eye, Edit2, MoreHorizontal, Search } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 export default function Employees() {
   const { employees, setEmployees, addAuditLog } = useData();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [search, setSearch] = useState('');
   const [newEmployee, setNewEmployee] = useState({ name: '', role: 'Staff', shift: 'Morning (6AM-2PM)' });
 
   const handleAddEmployee = (e) => {
@@ -22,6 +23,12 @@ export default function Employees() {
     setNewEmployee({ name: '', role: 'Staff', shift: 'Morning (6AM-2PM)' });
   };
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredEmployees = employees.filter((employee) =>
+    [employee.name, employee.role, employee.shift]
+      .some((value) => value?.toLowerCase().includes(normalizedSearch))
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between mb-2">
@@ -38,6 +45,19 @@ export default function Employees() {
       </div>
 
       <div className="glass-panel overflow-hidden">
+        <div className="p-4 border-b border-slate-100/50">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search employees by name, role, or shift..."
+              aria-label="Search employees"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="table-header">
@@ -50,7 +70,7 @@ export default function Employees() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100/50">
-              {employees.map(emp => (
+              {filteredEmployees.map(emp => (
                 <tr key={emp.id} className="table-row group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
@@ -88,6 +108,11 @@ export default function Employees() {
               ))}
             </tbody>
           </table>
+          {filteredEmployees.length === 0 && (
+            <div className="p-12 text-center font-medium text-slate-500">
+              {search ? 'No employees match your search.' : 'No employees found.'}
+            </div>
+          )}
         </div>
       </div>
 
