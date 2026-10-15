@@ -8,7 +8,8 @@
     "dev": "ts-node src/index.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "owner:create": "ts-node scripts/createOwner.ts"
+    "owner:create": "ts-node scripts/createOwner.ts",
+    "store:create": "ts-node scripts/createStore.ts"
   },
   "keywords": [],
   "author": "",
