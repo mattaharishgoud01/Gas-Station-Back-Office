@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { requireStoreAccess } from '../middleware/storeAccess';
 
 const router = Router();
 router.use(requireAuth);
@@ -18,7 +19,7 @@ const inventorySchema = z.object({
 });
 
 // All authenticated users can view inventory
-router.get('/', async (req, res) => {
+router.get('/', requireStoreAccess(req => (req.query.storeId as string) || (req as any).user.storeId), async (req, res) => {
   try {
     const storeId = req.query.storeId as string || (req as any).user.storeId;
     if (!storeId) return res.status(400).json({ error: 'storeId is required' });
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', requireRole(['OWNER', 'MANAGER']), async (req, res) => {
+router.post('/', requireRole(['OWNER', 'MANAGER']), requireStoreAccess(req => req.body.store_id || req.body.storeId || (req as any).user.storeId), async (req, res) => {
   try {
     const rawData = req.body;
     
@@ -59,7 +60,7 @@ router.post('/', requireRole(['OWNER', 'MANAGER']), async (req, res) => {
   }
 });
 
-router.post('/import-csv', requireRole(['OWNER', 'MANAGER']), async (req, res) => {
+router.post('/import-csv', requireRole(['OWNER', 'MANAGER']), requireStoreAccess(req => req.body.storeId), async (req, res) => {
   try {
     const { storeId, items } = req.body;
     
@@ -92,7 +93,12 @@ router.post('/import-csv', requireRole(['OWNER', 'MANAGER']), async (req, res) =
 router.put('/:id', requireRole(['OWNER', 'MANAGER']), async (req, res) => {
   try {
     const id = req.params.id as string;
-    const validatedData = inventorySchema.partial().parse(req.body);
+    const current = await prisma.inventory.findUnique({ where: { id } });
+    if (!current) return res.status(404).json({ error: 'Product not found' });
+    const actor = (req as any).user;
+    const store = await prisma.store.findUnique({ where: { id: current.storeId }, select: { ownerId: true } });
+    if (!store || !(store.ownerId === actor.id || (actor.storeId === current.storeId && actor.role === 'MANAGER'))) return res.status(403).json({ error: 'Forbidden' });
+    const validatedData = inventorySchema.partial().omit({ storeId: true }).parse(req.body);
     
     const updated = await prisma.inventory.update({
       where: { id },
@@ -113,6 +119,9 @@ router.delete('/:id', requireRole(['OWNER', 'MANAGER']), async (req, res) => {
     const id = req.params.id as string;
     const item = await prisma.inventory.findUnique({ where: { id } });
     if (item) {
+      const actor = (req as any).user;
+      const store = await prisma.store.findUnique({ where: { id: item.storeId }, select: { ownerId: true } });
+      if (!store || !(store.ownerId === actor.id || (actor.storeId === item.storeId && actor.role === 'MANAGER'))) return res.status(403).json({ error: 'Forbidden' });
       await prisma.inventory.delete({ where: { id } });
       
       const io = req.app.get('io');
