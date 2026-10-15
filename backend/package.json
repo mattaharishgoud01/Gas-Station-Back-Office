@@ -7,7 +7,8 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "db:push": "prisma db push",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "owner:create": "ts-node scripts/createOwner.ts"
   },
   "keywords": [],
   "author": "",
