@@ -6,7 +6,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   if (!token) return res.status(401).json({ error: 'Unauthorized: No token provided' });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret');
+    const decoded = jwt.verify(token, (() => { const secret = process.env.JWT_SECRET; if (!secret || secret.length < 32) throw new Error('JWT_SECRET must be set to at least 32 characters'); return secret; })());
     (req as any).user = decoded;
     next();
   } catch (err) {
