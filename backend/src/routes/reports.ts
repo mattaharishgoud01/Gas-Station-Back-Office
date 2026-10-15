@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { prisma } from '../db';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { requireStoreAccess } from '../middleware/storeAccess';
 
 const router = Router();
 router.use(requireAuth);
 
-router.get('/summary', requireRole(['OWNER', 'MANAGER']), async (req, res) => {
+router.get('/summary', requireRole(['OWNER', 'MANAGER']), requireStoreAccess(req => (req.query.storeId as string) || (req as any).user.storeId), async (req, res) => {
   try {
     const storeId = req.query.storeId as string || (req as any).user.storeId;
     
