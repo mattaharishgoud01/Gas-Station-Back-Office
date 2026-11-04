@@ -61,7 +61,7 @@ The backend's `dev` script runs `ts-node src/index.ts`. Confirm local ports, API
 ```bash
 cd backend && npm test
 cd ../frontend && npm run lint
-cd frontend && npm run build
+npm run build
 ```
 
 Run these from the repository root as separate commands if your shell's current directory differs. Tests and builds have not been executed as part of this documentation update.
